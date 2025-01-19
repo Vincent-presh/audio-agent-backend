@@ -3,8 +3,8 @@ import * as taskService from "../services/taskServices";
 
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const {clientId, videoUrl} = req.body;
-    const task = await taskService.createTask(clientId, videoUrl);
+    const {clientId, videoUrl, socketId} = req.body;
+    const task = await taskService.createTask(clientId, videoUrl, socketId);
     res.status(201).json({success: true, data: task});
   } catch (error) {
     res.status(500).json({success: false, message: error ?? ""});

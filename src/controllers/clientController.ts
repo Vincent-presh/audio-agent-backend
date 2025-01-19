@@ -8,13 +8,22 @@ export const createClient = async (
   res: Response<ApiResponse<typeof Client>>
 ): Promise<void> => {
   try {
-    const {name} = req.body;
-    const formatDocument = req.file?.path; // File path from multer
+    const {name, formatDocument} = req.body;
 
     if (!name || !formatDocument) {
       res.status(400).json({
         success: false,
         message: "Name and format document are required.",
+      });
+      return;
+    }
+
+    // Check if the client name already exists
+    const existingClient = await Client.findOne({name});
+    if (existingClient) {
+      res.status(400).json({
+        success: false,
+        message: "Client name must be unique.",
       });
       return;
     }
@@ -26,11 +35,18 @@ export const createClient = async (
       success: true,
       data: client,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "An error occurred.",
-    });
+  } catch (error: any) {
+    if (error.code === 11000) {
+      res.status(400).json({
+        success: false,
+        message: "Client name must be unique.",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "An error occurred.",
+      });
+    }
   }
 };
 
@@ -67,7 +83,7 @@ export const getClientById = async (
 export const getClients = async (
   req: Request,
   res: Response<ApiResponse<(typeof Client)[]>>
-) => {
+): Promise<void> => {
   try {
     const clients = await Client.find();
     res.status(200).json({

@@ -8,8 +8,13 @@ import llmService from "./llmService";
 
 export const processVideo = async (
   taskId: string,
-  videoUrl: string
-): Promise<{description: string; chapters: string[]; transcript: string}> => {
+  videoUrl: string,
+  socketId: string
+): Promise<{
+  description?: string;
+  chapters?: string[];
+  transcript?: string;
+}> => {
   let description = "";
   let chapters: string[] = [];
   let transcript = "";

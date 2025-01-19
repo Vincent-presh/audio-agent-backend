@@ -1,3 +1,4 @@
+import {Socket} from "socket.io";
 import Task, {TaskDocument} from "../models/taskModel";
 
 export const updateTaskProgress = async (
@@ -16,7 +17,8 @@ export const updateTaskProgress = async (
     {new: true}
   );
 
-  const io = require("../app").get("io");
+  const app = require("../app").app;
+  const io = app.get("io") as Socket;
   io.emit(`task-update-${taskId}`, {
     status,
     progress,
