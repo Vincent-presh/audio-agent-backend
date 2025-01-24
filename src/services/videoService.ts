@@ -1,10 +1,15 @@
 import * as progressUtils from "../utils/progress";
 import whisper from "../utils/whisper";
-import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
 import axios from "axios";
 import llmService from "./llmService";
+import ytdl from "@distube/ytdl-core";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+
+// Set FFmpeg path explicitly
+ffmpeg.setFfmpegPath(ffmpegPath!);
 
 export const processVideo = async (
   taskId: string,
@@ -78,13 +83,19 @@ if (!fs.existsSync(TEMP_DIR)) {
 }
 
 export const convertToMp3 = async (videoUrl: string): Promise<string> => {
-  const videoFileName = `video_${Date.now()}.mp4`;
+  const isYouTube =
+    videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be");
+  const videoFileName = `video_${Date.now()}.${isYouTube ? "mp4" : "mp4"}`;
   const audioFileName = `audio_${Date.now()}.mp3`;
   const videoPath = path.join(TEMP_DIR, videoFileName);
   const audioPath = path.join(TEMP_DIR, audioFileName);
 
-  // Step 1: Download the video
-  await downloadVideo(videoUrl, videoPath);
+  // Step 1: Download using appropriate method
+  if (isYouTube) {
+    await downloadYouTubeVideo(videoUrl, videoPath);
+  } else {
+    await downloadVideo(videoUrl, videoPath); // Your original download function
+  }
 
   // Step 2: Convert the video to MP3
   await new Promise<void>((resolve, reject) => {
@@ -105,6 +116,16 @@ export const convertToMp3 = async (videoUrl: string): Promise<string> => {
   fs.unlinkSync(videoPath);
 
   return audioPath;
+};
+
+const downloadYouTubeVideo = async (url: string, outputPath: string) => {
+  const stream = ytdl(url, {quality: "highestaudio"});
+  const writer = fs.createWriteStream(outputPath);
+  stream.pipe(writer);
+  return new Promise<void>((resolve, reject) => {
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
 };
 
 const downloadVideo = async (
